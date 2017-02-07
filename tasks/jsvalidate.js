@@ -63,9 +63,7 @@ module.exports = function (grunt) {
 
         try {
 
-            syntax = esprima.parse(src, {
-                tolerant: true
-            });
+            syntax = esprima.parse(src, options);
             if (syntax.errors.length === 0) {
                 if (params.verbose) {
                     grunt.log.ok();
