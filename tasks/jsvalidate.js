@@ -25,11 +25,73 @@
   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+function createsNewScope(node) {
+    return node.type === 'FunctionDeclaration' ||
+        node.type === 'FunctionExpression' ||
+        node.type === 'Program';
+}
+
+function uninitializedVariables(ast) {
+    var scopeChain = [];
+    var identifiers = [];
+    var undefinedIdentifiers = {};
+
+    function enter(node, parent) {
+        if (createsNewScope(node)) {
+            scopeChain.push([])
+        }
+        if (node.type === 'VariableDeclarator') {
+            var currentScope = scopeChain[scopeChain.length - 1]
+            currentScope.push(node.id.name)
+        }
+        if (parent && parent.type === 'MemberExpression') {
+            if (node.name && parent.object.name === node.name) {
+                identifiers.push(node.name)
+            }
+        } else {
+            if (node.type === 'Identifier') {
+                identifiers.push(node.name)
+            }
+        }
+    }
+
+    function leave(node) {
+        if (createsNewScope(node)) {
+            checkForLeaks(identifiers, scopeChain);
+            scopeChain.pop();
+            identifiers = [];
+        }
+    }
+
+    function isVarDefined(varname, scopeChain) {
+        for (var i = 0; i < scopeChain.length; i++) {
+            var scope = scopeChain[i];
+            if (scope.indexOf(varname) !== -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function checkForLeaks(identifiers, scopeChain) {
+        identifiers.forEach(function (identifier) {
+            if (!isVarDefined(identifier, scopeChain)) {
+                undefinedIdentifiers[identifier] = true;
+            }
+        });
+    }
+
+    estraverse.traverse(ast, {
+        enter: enter,
+        leave: leave
+    });
+    return Object.keys(undefinedIdentifiers);
+}
+
 module.exports = function (grunt) {
     'use strict';
     var esprima = require('esprima');
     var params;
-
 
     grunt.registerMultiTask('jsvalidate', 'Validate JavaScript source.', function () {
         params = this.options({
@@ -69,7 +131,6 @@ module.exports = function (grunt) {
                     grunt.log.ok();
                 }
             } else {
-
                 if (!params.verbose) {
                     grunt.log.write('Validating' + (extraMsg ? ' ' + extraMsg : '') + '  ');
                 }
@@ -79,6 +140,13 @@ module.exports = function (grunt) {
                     grunt.log.error(e.message);
                 });
             }
+
+            // uninitialized identifiers
+            // TODO: more static analysis!
+            var uninit = uninitializedIdentifiers(syntax);
+            uninit.forEach(function (un) {
+                gruntlog.error('Uninitialized: ' + un);
+            });
         } catch (e) {
             if (!params.verbose) {
                 grunt.log.write('Validating' + (extraMsg ? ' ' + extraMsg : '') + '  ');
