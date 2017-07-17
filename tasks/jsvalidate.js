@@ -32,6 +32,7 @@ function createsNewScope(node) {
 }
 
 function uninitializedVariables(ast) {
+    var estraverse = require('estraverse');
     var scopeChain = [];
     var identifiers = [];
     var undefinedIdentifiers = {};
