@@ -126,7 +126,7 @@ module.exports = function (grunt) {
         try {
 
             syntax = esprima.parse(src, options);
-            if (syntax.errors.length === 0) {
+            if (!syntax.errors || syntax.errors.length === 0) {
                 if (params.verbose) {
                     grunt.log.ok();
                 }
@@ -143,7 +143,7 @@ module.exports = function (grunt) {
 
             // uninitialized identifiers
             // TODO: more static analysis!
-            var uninit = uninitializedIdentifiers(syntax);
+            var uninit = uninitializedVariables(syntax);
             uninit.forEach(function (un) {
                 gruntlog.error('Uninitialized: ' + un);
             });
