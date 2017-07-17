@@ -146,7 +146,7 @@ module.exports = function (grunt) {
             // TODO: more static analysis!
             var uninit = uninitializedVariables(syntax);
             uninit.forEach(function (un) {
-                gruntlog.error('Uninitialized: ' + un);
+                grunt.log.error('Uninitialized: ' + un);
             });
         } catch (e) {
             if (!params.verbose) {
