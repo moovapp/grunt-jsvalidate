@@ -144,10 +144,12 @@ module.exports = function (grunt) {
 
             // uninitialized identifiers
             // TODO: more static analysis!
-            var uninit = uninitializedVariables(syntax);
-            uninit.forEach(function (un) {
-                grunt.log.error('Uninitialized: ' + un);
-            });
+            if (globals.detectUninitializedVariables){
+              var uninit = uninitializedVariables(syntax);
+              uninit.forEach(function (un) {
+                  grunt.log.error('Uninitialized: ' + un);
+              });
+            }
         } catch (e) {
             if (!params.verbose) {
                 grunt.log.write('Validating' + (extraMsg ? ' ' + extraMsg : '') + '  ');
